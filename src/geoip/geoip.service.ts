@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import * as maxmind from 'maxmind';
 import * as path from 'path';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class GeoipService {
   private lookupService: maxmind.Reader<maxmind.Response>;
 
-  constructor() {
+  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {
     const dbPath = path.join('data', 'GeoLite2-City.mmdb');
     maxmind
       .open(dbPath)
@@ -19,6 +21,11 @@ export class GeoipService {
   }
 
   async lookupIp(ip: string): Promise<any> {
-    return this.lookupService.get(ip);
+    const result = await this.lookupService.get(ip);
+
+    return {
+      cached: false,
+      ...result,
+    };
   }
 }
